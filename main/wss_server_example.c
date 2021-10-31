@@ -19,6 +19,7 @@
 #include <esp_https_server.h>
 #include "keep_alive.h"
 #include "dmx.h"
+#include "gpio.h"
 
 #if !CONFIG_HTTPD_WS_SUPPORT
 #error This example cannot be used unless HTTPD_WS_SUPPORT is enabled in esp-http-server component configuration
@@ -332,4 +333,5 @@ void app_main(void)
      */
     //wss_server_send_messages(&server);
     start_dmx();
+    gpio_start();
 }
