@@ -15,6 +15,7 @@
     "sstream": "c",
     "strstream": "c",
     "future": "c",
-    "xlocale": "c"
+    "xlocale": "c",
+    "random": "c"
   }
 }

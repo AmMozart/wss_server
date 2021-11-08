@@ -36,16 +36,43 @@ static const char *TAG = "wss_echo_server";
 static const size_t max_clients = 7;
 static httpd_handle_t server = NULL;
 
-static void send_hello(void *arg)
+static void get_JSON_state(char *str)
+{
+    int i;
+    char s[1024] = "{";
+    for (i = 0; i < MAX_ELECTRIC_GROUPS; i++)
+    {
+        if (dmx_data_arr[(int)electric_groups[i].dmx_channel] > 0)
+        {
+            if (i > 0)
+                strcat(s, ",");
+            strcat(s, "\"");
+            strcat(s, electric_groups[i].name);
+            strcat(s, "\"");
+            strcat(s, ":");
+            char str[10];
+            sprintf(str, "%d", dmx_data_arr[(int)electric_groups[i].dmx_channel]);
+            strcat(s, str);
+        }
+    }
+    strcat(s, "}");
+    strcpy(str, s);
+    return str;
+}
+
+static void send_JSON_state(void *arg)
 {
     struct async_resp_arg *resp_arg = arg;
     httpd_handle_t hd = resp_arg->hd;
     int fd = resp_arg->fd;
     httpd_ws_frame_t ws_pkt;
     memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
-    ws_pkt.payload = dmx_data_arr;
-    ws_pkt.len = 513;
-    ws_pkt.type = HTTPD_WS_TYPE_BINARY;
+
+    char s[1024];
+    get_JSON_state(s);
+    ws_pkt.payload = (uint8_t *)s;
+    ws_pkt.len = strlen(s);
+    ws_pkt.type = HTTPD_WS_TYPE_TEXT;
 
     httpd_ws_send_frame_async(hd, fd, &ws_pkt);
     free(resp_arg);
@@ -74,7 +101,7 @@ static void wss_server_send_messages(httpd_handle_t *server)
                 struct async_resp_arg *resp_arg = malloc(sizeof(struct async_resp_arg));
                 resp_arg->hd = *server;
                 resp_arg->fd = sock;
-                if (httpd_queue_work(resp_arg->hd, send_hello, resp_arg) != ESP_OK)
+                if (httpd_queue_work(resp_arg->hd, send_JSON_state, resp_arg) != ESP_OK)
                 {
                     ESP_LOGE(TAG, "httpd_queue_work failed!");
                     // send_messages = false;
@@ -143,9 +170,11 @@ static esp_err_t ws_handler(httpd_req_t *req)
 
         if (strcmp((char *)ws_pkt.payload, "GET_STATE") == 0)
         {
-            ws_pkt.payload = dmx_data_arr;
-            ws_pkt.len = 513;
-            ws_pkt.type = HTTPD_WS_TYPE_BINARY;
+            char s[1024];
+            get_JSON_state(s);
+            ws_pkt.payload = (uint8_t *)s;
+            ws_pkt.len = strlen(s);
+            ws_pkt.type = HTTPD_WS_TYPE_TEXT;
             ret = httpd_ws_send_frame(req, &ws_pkt);
         }
         else
