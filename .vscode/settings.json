@@ -1,4 +1,20 @@
 {
   "C_Cpp.intelliSenseEngine": "Tag Parser",
-  "idf.port": "/dev/ttyUSB0"
+  "idf.port": "/dev/ttyUSB0",
+  "files.associations": {
+    "gpio.h": "c",
+    "chrono": "c",
+    "functional": "c",
+    "optional": "c",
+    "system_error": "c",
+    "type_traits": "c",
+    "xlocmon": "c",
+    "xlocnum": "c",
+    "xtr1common": "c",
+    "regex": "c",
+    "sstream": "c",
+    "strstream": "c",
+    "future": "c",
+    "xlocale": "c"
+  }
 }

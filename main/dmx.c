@@ -8,9 +8,6 @@
 #define ECHO_TEST_RXD (GPIO_NUM_5)
 #define ECHO_TEST_RTS (UART_PIN_NO_CHANGE)
 #define ECHO_TEST_CTS (UART_PIN_NO_CHANGE)
-// #define BUF_SIZE 513
-
-// uint8_t dmx_data_arr[BUF_SIZE];
 
 void set_dmx_level(int channel, uint8_t value)
 {
