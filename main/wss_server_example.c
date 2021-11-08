@@ -20,6 +20,7 @@
 #include "keep_alive.h"
 #include "dmx.h"
 #include "gpio.h"
+#include "electric_groups.h"
 
 #if !CONFIG_HTTPD_WS_SUPPORT
 #error This example cannot be used unless HTTPD_WS_SUPPORT is enabled in esp-http-server component configuration
@@ -53,7 +54,7 @@ static void send_hello(void *arg)
 // Get all clients and send async message
 static void wss_server_send_messages(httpd_handle_t *server)
 {
-    bool send_messages = true;
+    // bool send_messages = true;
 
     // Send async message to all connected clients that use websocket protocol
     if (!*server)
@@ -76,7 +77,7 @@ static void wss_server_send_messages(httpd_handle_t *server)
                 if (httpd_queue_work(resp_arg->hd, send_hello, resp_arg) != ESP_OK)
                 {
                     ESP_LOGE(TAG, "httpd_queue_work failed!");
-                    send_messages = false;
+                    // send_messages = false;
                     return;
                 }
             }
@@ -130,9 +131,10 @@ static esp_err_t ws_handler(httpd_req_t *req)
     }
     else if (ws_pkt.type == HTTPD_WS_TYPE_TEXT)
     {
-
+        ESP_LOGI(TAG, "Received packet with message: %s", ws_pkt.payload);
         /* Set max_len = ws_pkt.len to get the frame payload */
         ret = httpd_ws_recv_frame(req, &ws_pkt, ws_pkt.len);
+
         if (ret != ESP_OK)
         {
             ESP_LOGE(TAG, "httpd_ws_recv_frame failed with %d", ret);
@@ -148,18 +150,25 @@ static esp_err_t ws_handler(httpd_req_t *req)
         }
         else
         {
-            int package = atoi((char *)ws_pkt.payload);
-            uint8_t mask = 255;
-            set_dmx_level((int)package >> 8, (uint8_t)mask & package);
+            char *str = strtok((char *)ws_pkt.payload, " ");
+            char *name = str;
+            str = strtok(NULL, " ");
+            char *value = str;
+
+            ESP_LOGI(TAG, "name:%s value:%s", name, value);
+            int i;
+            for (i = 0; i < MAX_ELECTRIC_GROUPS; i++)
+            {
+                if (strcmp(electric_groups[i].name, name) == 0)
+                {
+                    set_dmx_level(electric_groups[i].dmx_channel, (uint8_t)atoi(value));
+                    break;
+                }
+            }
+
             wss_server_send_messages(&server);
         }
 
-        ESP_LOGI(TAG, "Received packet with message: %s", ws_pkt.payload);
-        ret = httpd_ws_send_frame(req, &ws_pkt);
-        if (ret != ESP_OK)
-        {
-            ESP_LOGE(TAG, "httpd_ws_send_frame failed with %d", ret);
-        }
         ESP_LOGI(TAG, "ws_handler: httpd_handle_t=%p, sockfd=%d, client_info:%d", req->handle,
                  httpd_req_to_sockfd(req), httpd_ws_get_fd_info(req->handle, httpd_req_to_sockfd(req)));
         free(buf);
